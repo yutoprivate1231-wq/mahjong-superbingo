@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
+// Render 用の環境変数から取得（ローカルは ws://localhost:3000/ws）
+const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:3000/ws";
+
 function App() {
   const [socket, setSocket] = useState(null);
   const [roomId, setRoomId] = useState("");
   const [joined, setJoined] = useState(false);
-  const [seats, setSeats] = useState([null, null, null]); // ★ 3人専用に修正
+  const [seats, setSeats] = useState([null, null, null]);
   const [playerName, setPlayerName] = useState("");
   const [mySeat, setMySeat] = useState(null);
 
-  // サーバー接続
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:3000"); // デプロイ時は適宜URL変更
+    const ws = new WebSocket(WS_URL);
     setSocket(ws);
 
     ws.onmessage = (event) => {
@@ -19,6 +21,10 @@ function App() {
 
       if (msg.type === "room_state") {
         setSeats(msg.seats);
+      }
+      if (msg.type === "room_created") {
+        alert(`部屋が作成されました: ${msg.code}`);
+        setRoomId(msg.code);
       }
       if (msg.type === "joined") {
         setJoined(true);
@@ -32,18 +38,12 @@ function App() {
     return () => ws.close();
   }, []);
 
-  // ルーム作成
   const createRoom = () => {
-    if (socket) {
-      socket.send(JSON.stringify({ type: "create_room", playerName }));
-    }
+    socket?.send(JSON.stringify({ type: "create_room", playerName }));
   };
 
-  // ルーム参加
   const joinRoom = () => {
-    if (socket && roomId) {
-      socket.send(JSON.stringify({ type: "join_room", roomId, playerName }));
-    }
+    socket?.send(JSON.stringify({ type: "join_room", roomId, playerName }));
   };
 
   return (
@@ -89,5 +89,4 @@ function App() {
   );
 }
 
-const root = createRoot(document.getElementById("root"));
-root.render(<App />);
+createRoot(document.getElementById("root")).render(<App />);
