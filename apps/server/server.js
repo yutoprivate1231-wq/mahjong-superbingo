@@ -1,10 +1,15 @@
-const http = require("http");
-const WebSocket = require("ws");
-const fs = require("fs");
-const path = require("path");
+import http from "http";
+import { WebSocketServer } from "ws";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// __dirname 相当をESMで再現
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const server = http.createServer((req, res) => {
-  let filePath = req.url === "/" ? "./index.html" : "." + req.url;
+  let filePath = req.url === "/" ? path.join(__dirname, "index.html") : path.join(__dirname, req.url);
   const ext = path.extname(filePath);
   const type =
     ext === ".html"
@@ -12,6 +17,7 @@ const server = http.createServer((req, res) => {
       : ext === ".js"
       ? "application/javascript"
       : "text/plain";
+
   fs.readFile(filePath, (err, data) => {
     if (err) {
       res.writeHead(404);
@@ -58,7 +64,7 @@ function roomSnapshot(room) {
 }
 
 // ---- WebSocket ----
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws) => {
   let joined = null; // {room, seat}
